@@ -44,9 +44,11 @@ export default function MainClient() {
       setTimestamps(parsed);
       // Save to history
       await addHistory({
-        id: `${data.id}-${Date.now()}`,
+        id: data.id || `${Date.now()}`,
+        videoId: data.id || undefined,
         title: data.title ?? 'Untitled video',
         url: input,
+        thumbUrl: (data as any)?.thumbnails?.high?.url || undefined,
         createdAt: new Date().toISOString(),
         timestamps: parsed,
       });

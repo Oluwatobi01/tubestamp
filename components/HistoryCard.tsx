@@ -1,10 +1,12 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { getHistory, type HistoryItem } from '@/lib/storage';
+import { useState } from 'react';
+import HistoryModal from './HistoryModal';
 
-function Card({ item }: { item: HistoryItem }) {
+function Card({ item, onClick }: { item: HistoryItem; onClick: (i: HistoryItem) => void }) {
   return (
-    <article className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 hover:border-fuchsia-600/40">
+    <article onClick={() => onClick(item)} className="cursor-pointer rounded-xl border border-gray-800 bg-gray-900/50 p-4 hover:border-fuchsia-600/40">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-white">{item.title}</h3>
@@ -30,17 +32,25 @@ export default function HistoryCard() {
   const { data = [], isLoading } = useQuery({ queryKey: ['history'], queryFn: getHistory });
   if (isLoading) return <div className="text-sm text-gray-400">Loading history…</div>;
   if (!data.length) return <div className="text-sm text-gray-400">No history yet. Generate timestamps to see recent items here.</div>;
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<HistoryItem | null>(null);
+
+  function onClick(i: HistoryItem) {
+    setSelected(i);
+    setOpen(true);
+  }
+
   return (
     <section className="container-max py-12">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Recent history</h2>
-        <a href="#" className="text-sm text-fuchsia-400 hover:text-fuchsia-300">View all</a>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.slice(0, 6).map((item) => (
-          <Card key={item.id} item={item} />
+          <Card key={item.id} item={item} onClick={onClick} />
         ))}
       </div>
+      <HistoryModal open={open} onClose={() => setOpen(false)} item={selected} />
     </section>
   );
 }
