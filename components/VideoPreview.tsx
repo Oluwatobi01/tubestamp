@@ -1,3 +1,5 @@
+import type { TimestampItem } from '@/lib/storage';
+
 type Props = {
   loading?: boolean;
   details?: {
@@ -9,9 +11,10 @@ type Props = {
     thumbnails?: any;
     duration?: string | null;
   } | null;
+  timestamps?: TimestampItem[];
 };
 
-export default function VideoPreview({ loading, details }: Props) {
+export default function VideoPreview({ loading, details, timestamps = [] }: Props) {
   return (
     <section id="preview" className="mx-auto w-full max-w-3xl">
       <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 shadow-lg">
@@ -31,7 +34,17 @@ export default function VideoPreview({ loading, details }: Props) {
             )}
           </div>
         )}
-        <div className="mt-4 h-40 w-full rounded-md border border-dashed border-gray-700/80 bg-gray-900" />
+        {timestamps.length > 0 && (
+          <div className="mt-5">
+            <h3 className="text-sm font-semibold text-gray-200">Chapters</h3>
+            <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+              {timestamps.map((t) => (
+                <li key={t.time + t.label} className="text-sm text-gray-300"><span className="text-gray-400">{t.time}</span> — {t.label}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="mt-4 h-32 w-full rounded-md border border-dashed border-gray-700/80 bg-gray-900" />
       </div>
     </section>
   );

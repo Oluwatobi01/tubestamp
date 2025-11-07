@@ -4,12 +4,13 @@ import HeroForm from './HeroForm';
 import VideoPreview from './VideoPreview';
 import type { VideoDetails } from '@/lib/api';
 import { fetchVideoDetails } from '@/lib/api';
-import { addHistory } from '@/lib/storage';
+import { addHistory, type TimestampItem } from '@/lib/storage';
 
 export default function MainClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<VideoDetails | null>(null);
+  const [timestamps, setTimestamps] = useState<TimestampItem[]>([]);
 
   function isYouTubeUrl(value: string): boolean {
     try {
@@ -33,13 +34,17 @@ export default function MainClient() {
     try {
       const data = await fetchVideoDetails(input);
       setDetails(data);
+      // Parse chapters from description
+      const { parseChapters } = await import('@/lib/chapters');
+      const parsed = parseChapters(data.description || '');
+      setTimestamps(parsed);
       // Save to history
       await addHistory({
         id: `${data.id}-${Date.now()}`,
         title: data.title ?? 'Untitled video',
         url: input,
         createdAt: new Date().toISOString(),
-        timestamps: [],
+        timestamps: parsed,
       });
     } catch (e: any) {
       setError(e?.message ?? 'Failed to fetch video details');
@@ -67,7 +72,7 @@ export default function MainClient() {
       </section>
 
       <section className="container-max">
-        <VideoPreview details={details} loading={loading} />
+        <VideoPreview details={details} loading={loading} timestamps={timestamps} />
       </section>
     </>
   );
