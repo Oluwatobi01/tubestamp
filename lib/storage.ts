@@ -40,3 +40,14 @@ export async function getHistory(): Promise<HistoryItem[]> {
     return [];
   }
 }
+
+export async function addHistory(item: HistoryItem): Promise<void> {
+  if (!isBrowser()) return;
+  try {
+    const list = await getHistory();
+    const next = [item, ...list];
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    // ignore storage errors
+  }
+}
