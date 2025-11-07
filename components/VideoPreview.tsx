@@ -1,9 +1,36 @@
-export default function VideoPreview() {
+type Props = {
+  loading?: boolean;
+  details?: {
+    id: string;
+    title: string | null;
+    description: string | null;
+    channelTitle: string | null;
+    publishedAt: string | null;
+    thumbnails?: any;
+    duration?: string | null;
+  } | null;
+};
+
+export default function VideoPreview({ loading, details }: Props) {
   return (
     <section id="preview" className="mx-auto w-full max-w-3xl">
       <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 shadow-lg">
         <h2 className="text-lg font-semibold text-gray-100">Preview</h2>
-        <p className="mt-2 text-sm text-gray-400">Your video details and generated timestamps will appear here.</p>
+        {!details && !loading && (
+          <p className="mt-2 text-sm text-gray-400">Your video details and generated timestamps will appear here.</p>
+        )}
+        {loading && <p className="mt-2 text-sm text-gray-400">Loading video details…</p>}
+        {details && (
+          <div className="mt-4">
+            <div className="text-base font-semibold text-white">{details.title}</div>
+            {details.channelTitle && (
+              <div className="text-sm text-gray-400">by {details.channelTitle}</div>
+            )}
+            {details.publishedAt && (
+              <div className="text-xs text-gray-500">Published {new Date(details.publishedAt).toLocaleDateString()}</div>
+            )}
+          </div>
+        )}
         <div className="mt-4 h-40 w-full rounded-md border border-dashed border-gray-700/80 bg-gray-900" />
       </div>
     </section>

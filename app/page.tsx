@@ -1,6 +1,5 @@
 import Header from '../components/Header';
-import HeroForm from '../components/HeroForm';
-import VideoPreview from '../components/VideoPreview';
+import MainClient from '../components/MainClient';
 import CTAGrid from '../components/CTAGrid';
 import StatsPanel from '../components/StatsPanel';
 import HistoryCard from '../components/HistoryCard';
@@ -21,12 +20,8 @@ export default function Home() {
           </p>
         </div>
         <div className="mt-8">
-          <HeroForm />
+          <MainClient />
         </div>
-      </section>
-
-      <section className="container-max">
-        <VideoPreview />
       </section>
 
       <CTAGrid />
