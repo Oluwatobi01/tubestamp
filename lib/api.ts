@@ -1,10 +1,13 @@
+export type Thumbnail = { url: string; width?: number; height?: number };
+export type Thumbnails = { [key: string]: Thumbnail };
+
 export type VideoDetails = {
   id: string;
   title: string | null;
   description: string | null;
   channelTitle: string | null;
   publishedAt: string | null;
-  thumbnails: any;
+  thumbnails: Thumbnails | null;
   duration: string | null; // ISO 8601
   viewCount: string | null;
   likeCount: string | null;

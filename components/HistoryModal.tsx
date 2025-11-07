@@ -1,5 +1,4 @@
 'use client';
-import { Fragment } from 'react';
 import type { HistoryItem } from '@/lib/storage';
 
 export default function HistoryModal({ open, onClose, item }: { open: boolean; onClose: () => void; item: HistoryItem | null; }) {

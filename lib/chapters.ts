@@ -17,10 +17,10 @@ export function parseChapters(description: string): TimestampItem[] {
   //  - token formats like 1h02m03s or 2m45s
   //  - common leading bullets/symbols are ignored
   const timeRegex = /(?:\b(\d{1,2}):(\d{2}):(\d{2})\b)|(?:\b(\d{1,2}):(\d{2})\b)|(?:\b(?:(\d{1,2})h)?(?:(\d{1,2})m)?(\d{1,2})s\b)/i;
-  const bulletTrim = /^[\-•·\*\s]+|[\-•·\*\s]+$/g;
+  const bulletTrim = /^[•·*\s-]+|[•·*\s-]+$/g;
 
   for (const raw of lines) {
-    const line = raw.trim().replace(/[\[\]()]/g, '');
+    const line = raw.trim().replace(/[()[\]]/g, '');
     if (!line) continue;
     const m = line.match(timeRegex);
     if (!m) continue;
@@ -40,13 +40,13 @@ export function parseChapters(description: string): TimestampItem[] {
     }
     if (isNaN(mi) || isNaN(s)) continue;
 
-    const timeText = m[0];
+    const timeText = m[0] as string;
     const time = normalize(h, mi, s);
 
     // Prefer label after the timestamp; if empty, fallback to before
     const idx = line.indexOf(timeText);
-    let after = line.slice(idx + timeText.length).replace(/^[\s\-–—:\u2013\u2014|]+/, '').replace(bulletTrim, '').trim();
-    let before = line.slice(0, idx).replace(/[\s\-–—:\u2013\u2014|]+$/, '').replace(bulletTrim, '').trim();
+    const after = line.slice(idx + timeText.length).replace(/[\s–—:\u2013\u2014|-]+^/, '').replace(bulletTrim, '').trim();
+    const before = line.slice(0, idx).replace(/[\s–—:\u2013\u2014|-]+$/, '').replace(bulletTrim, '').trim();
     const label = (after || before || time);
 
     items.push({ time, label });

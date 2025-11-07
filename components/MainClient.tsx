@@ -48,12 +48,13 @@ export default function MainClient() {
         videoId: data.id || undefined,
         title: data.title ?? 'Untitled video',
         url: input,
-        thumbUrl: (data as any)?.thumbnails?.high?.url || undefined,
+        thumbUrl: data.thumbnails?.high?.url || undefined,
         createdAt: new Date().toISOString(),
         timestamps: parsed,
       });
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to fetch video details');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch video details';
+      setError(message);
       setDetails(null);
     } finally {
       setLoading(false);

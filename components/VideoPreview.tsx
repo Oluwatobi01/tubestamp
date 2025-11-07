@@ -2,6 +2,8 @@ import type { TimestampItem } from '@/lib/storage';
 import Image from 'next/image';
 import CopyChapters from './CopyChapters';
 
+import type { Thumbnails } from '@/lib/api';
+
 type Props = {
   loading?: boolean;
   details?: {
@@ -10,7 +12,7 @@ type Props = {
     description: string | null;
     channelTitle: string | null;
     publishedAt: string | null;
-    thumbnails?: any;
+    thumbnails?: Thumbnails | null;
     duration?: string | null;
   } | null;
   timestamps?: TimestampItem[];
