@@ -11,17 +11,44 @@ export function parseChapters(description: string): TimestampItem[] {
   if (!description) return [];
   const lines = description.split(/\r?\n/);
   const items: TimestampItem[] = [];
-  const re = /(\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2}))\b\s*[-–—:\u2013\u2014\s]*\s*(.*)/; // captures [full, h?, m, s] and label
+
+  // Patterns we support:
+  //  - hh:mm:ss or mm:ss anywhere in the line
+  //  - 1h02m03s, 2m45s formats
+  // We will pick the first timestamp in a line and consider the rest as the label.
+  const timeRegex = /(?:\b(\d{1,2}):(\d{2}):(\d{2})\b)|(?:\b(\d{1,2}):(\d{2})\b)|(?:\b(?:(\d{1,2})h)?(?:(\d{1,2})m)?(\d{1,2})s\b)/i;
+
   for (const raw of lines) {
-    const line = raw.trim();
-    const m = line.match(re);
+    const line = raw.trim().replace(/[\[\]()]/g, '');
+    if (!line) continue;
+    const m = line.match(timeRegex);
     if (!m) continue;
-    const h = m[2] ? parseInt(m[2], 10) : 0;
-    const mi = parseInt(m[3], 10);
-    const s = parseInt(m[4], 10);
+
+    let h = 0, mi = 0, s = 0;
+    if (m[1] && m[2] && m[3]) {
+      // hh:mm:ss
+      h = parseInt(m[1], 10); mi = parseInt(m[2], 10); s = parseInt(m[3], 10);
+    } else if (m[4] && m[5]) {
+      // mm:ss
+      mi = parseInt(m[4], 10); s = parseInt(m[5], 10);
+    } else if (m[6] || m[7] || m[8]) {
+      // h m s tokens
+      h = m[6] ? parseInt(m[6], 10) : 0;
+      mi = m[7] ? parseInt(m[7], 10) : 0;
+      s = m[8] ? parseInt(m[8], 10) : 0;
+    }
     if (isNaN(mi) || isNaN(s)) continue;
+
+    const timeText = m[0];
     const time = normalize(h, mi, s);
-    const label = (m[5] || '').trim() || time;
+
+    // Build label: remove the matched time and common separators around it
+    const label = line
+      .replace(timeText, '')
+      .replace(/^[\s\-–—:\u2013\u2014]+/, '')
+      .replace(/[\s\-–—:\u2013\u2014]+$/, '')
+      .trim() || time;
+
     items.push({ time, label });
   }
   return items;
