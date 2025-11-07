@@ -58,12 +58,8 @@ export default function MainClient() {
     <>
       <section className="container-max py-12">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Generate YouTube Timestamps
-          </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-base text-gray-400">
-            Paste a YouTube URL and get clean, shareable chapter timestamps.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Generate YouTube Timestamps</h1>
+          <p className="mx-auto mt-3 max-w-2xl text-base text-gray-400">Paste a YouTube URL and get clean, shareable chapter timestamps.</p>
         </div>
         <div className="mt-8">
           <HeroForm onSubmit={handleSubmit} loading={loading} />
