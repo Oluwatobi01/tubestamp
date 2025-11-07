@@ -1,4 +1,5 @@
 import type { TimestampItem } from '@/lib/storage';
+import Image from 'next/image';
 
 type Props = {
   loading?: boolean;
@@ -24,14 +25,29 @@ export default function VideoPreview({ loading, details, timestamps = [] }: Prop
         )}
         {loading && <p className="mt-2 text-sm text-gray-400">Loading video details…</p>}
         {details && (
-          <div className="mt-4">
-            <div className="text-base font-semibold text-white">{details.title}</div>
-            {details.channelTitle && (
-              <div className="text-sm text-gray-400">by {details.channelTitle}</div>
-            )}
-            {details.publishedAt && (
-              <div className="text-xs text-gray-500">Published {new Date(details.publishedAt).toLocaleDateString()}</div>
-            )}
+          <div className="mt-4 grid gap-4 sm:grid-cols-[160px,1fr]">
+            <div className="relative aspect-video w-full overflow-hidden rounded-md border border-gray-800 bg-black sm:aspect-auto sm:h-28 sm:w-40">
+              {details.thumbnails?.high?.url ? (
+                <Image
+                  src={details.thumbnails.high.url}
+                  alt={details.title ?? 'Thumbnail'}
+                  fill
+                  sizes="160px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-gray-500">No thumbnail</div>
+              )}
+            </div>
+            <div>
+              <div className="text-base font-semibold text-white">{details.title}</div>
+              {details.channelTitle && (
+                <div className="text-sm text-gray-400">by {details.channelTitle}</div>
+              )}
+              {details.publishedAt && (
+                <div className="text-xs text-gray-500">Published {new Date(details.publishedAt).toLocaleDateString()}</div>
+              )}
+            </div>
           </div>
         )}
         {timestamps.length > 0 && (
