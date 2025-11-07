@@ -50,6 +50,9 @@ export default function VideoPreview({ loading, details, timestamps = [] }: Prop
             </div>
           </div>
         )}
+        {timestamps.length === 0 && details && !loading && (
+          <p className="mt-4 text-sm text-gray-400">No chapters detected in the description.</p>
+        )}
         {timestamps.length > 0 && (
           <div className="mt-5">
             <h3 className="text-sm font-semibold text-gray-200">Chapters</h3>

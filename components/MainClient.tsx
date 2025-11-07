@@ -26,6 +26,7 @@ export default function MainClient() {
 
   async function handleSubmit(input: string) {
     setError(null);
+    setTimestamps([]);
     if (!isYouTubeUrl(input)) {
       setError('URL is not a YouTube link');
       return;
