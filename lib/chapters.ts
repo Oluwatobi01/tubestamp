@@ -53,3 +53,45 @@ export function parseChapters(description: string): TimestampItem[] {
   }
   return items;
 }
+
+// Parse an ISO-8601 YouTube duration (e.g., PT1H2M3S) into total seconds
+export function durationToSeconds(iso: string): number {
+  const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i);
+  if (!m) return 0;
+  const h = parseInt(m[1] || '0', 10);
+  const min = parseInt(m[2] || '0', 10);
+  const s = parseInt(m[3] || '0', 10);
+  return h * 3600 + min * 60 + s;
+}
+
+function formatSeconds(total: number) {
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return normalize(h, m, s);
+}
+
+// Generate simple auto-chapters based on duration when none are present
+export function generateAutoChapters(durationIso: string): TimestampItem[] {
+  const total = durationToSeconds(durationIso);
+  if (!total || total < 60) return [{ time: '00:00', label: 'Intro' }];
+
+  // Choose an interval based on total length
+  let interval = 300; // 5 min default
+  if (total <= 8 * 60) interval = 120;       // <=8 min -> 2m
+  else if (total <= 20 * 60) interval = 180; // <=20 min -> 3m
+  else if (total <= 40 * 60) interval = 300; // <=40 min -> 5m
+  else if (total <= 90 * 60) interval = 480; // <=90 min -> 8m
+  else interval = 600;                        // >90 min -> 10m
+
+  const items: TimestampItem[] = [];
+  items.push({ time: '00:00', label: 'Intro' });
+  for (let t = interval; t < total - 30; t += interval) { // leave last <30s as tail
+    items.push({ time: formatSeconds(t), label: 'Chapter' });
+  }
+  // Add an ending card if last gap is large
+  if (total - (items.length ? durationToSeconds(items[items.length - 1].time) : 0) > interval / 2) {
+    items.push({ time: formatSeconds(Math.max(total - Math.floor(interval / 2), 0)), label: 'Wrap-up' });
+  }
+  return items;
+}

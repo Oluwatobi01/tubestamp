@@ -36,8 +36,11 @@ export default function MainClient() {
       const data = await fetchVideoDetails(input);
       setDetails(data);
       // Parse chapters from description
-      const { parseChapters } = await import('@/lib/chapters');
-      const parsed = parseChapters(data.description || '');
+      const { parseChapters, generateAutoChapters } = await import('@/lib/chapters');
+      let parsed = parseChapters(data.description || '');
+      if (!parsed.length && data.duration) {
+        parsed = generateAutoChapters(data.duration);
+      }
       setTimestamps(parsed);
       // Save to history
       await addHistory({
