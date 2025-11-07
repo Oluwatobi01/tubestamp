@@ -1,0 +1,1 @@
+'use client';\nimport React from 'react';\nimport {useQuery} from '@tanstack/react-query';\nimport {getHistory} from '@/lib/storage';
