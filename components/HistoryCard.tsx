@@ -30,8 +30,6 @@ function Card({ item, onClick }: { item: HistoryItem; onClick: (i: HistoryItem) 
 
 export default function HistoryCard() {
   const { data = [], isLoading } = useQuery({ queryKey: ['history'], queryFn: getHistory });
-  if (isLoading) return <div className="text-sm text-gray-400">Loading history…</div>;
-  if (!data.length) return <div className="text-sm text-gray-400">No history yet. Generate timestamps to see recent items here.</div>;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<HistoryItem | null>(null);
 
@@ -39,6 +37,9 @@ export default function HistoryCard() {
     setSelected(i);
     setOpen(true);
   }
+
+  if (isLoading) return <div className="text-sm text-gray-400">Loading history…</div>;
+  if (!data.length) return <div className="text-sm text-gray-400">No history yet. Generate timestamps to see recent items here.</div>;
 
   return (
     <section className="container-max py-12">
