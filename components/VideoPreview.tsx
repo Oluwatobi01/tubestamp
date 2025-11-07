@@ -1,5 +1,6 @@
 import type { TimestampItem } from '@/lib/storage';
 import Image from 'next/image';
+import CopyChapters from './CopyChapters';
 
 type Props = {
   loading?: boolean;
@@ -55,7 +56,10 @@ export default function VideoPreview({ loading, details, timestamps = [] }: Prop
         )}
         {timestamps.length > 0 && (
           <div className="mt-5">
-            <h3 className="text-sm font-semibold text-gray-200">Chapters</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-gray-200">Chapters</h3>
+              <CopyChapters timestamps={timestamps} />
+            </div>
             <ul className="mt-2 grid gap-1 sm:grid-cols-2">
               {timestamps.map((t) => (
                 <li key={t.time + t.label} className="text-sm text-gray-300"><span className="text-gray-400">{t.time}</span> — {t.label}</li>
