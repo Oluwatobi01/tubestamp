@@ -33,6 +33,9 @@ export default function HeroForm({ onSubmit, loading }: { onSubmit?: (input: str
         </button>
       </div>
       <p className="mt-2 text-xs text-gray-400">Paste a YouTube link and we’ll generate clean chapter timestamps.</p>
+      {loading === false && (
+        <p className="sr-only">Ready</p>
+      )}
     </form>
   );
 }

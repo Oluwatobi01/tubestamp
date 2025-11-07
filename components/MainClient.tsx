@@ -11,8 +11,24 @@ export default function MainClient() {
   const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<VideoDetails | null>(null);
 
+  function isYouTubeUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase();
+      if (host === 'youtu.be') return true;
+      if (host.endsWith('youtube.com')) return true;
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   async function handleSubmit(input: string) {
     setError(null);
+    if (!isYouTubeUrl(input)) {
+      setError('URL is not a YouTube link');
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchVideoDetails(input);
