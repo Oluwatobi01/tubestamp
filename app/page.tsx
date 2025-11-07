@@ -1,13 +1,17 @@
 import Header from '../components/Header';
 import HeroForm from '../components/HeroForm';
 import VideoPreview from '../components/VideoPreview';
+import CTAGrid from '../components/CTAGrid';
+import StatsPanel from '../components/StatsPanel';
+import HistoryCard from '../components/HistoryCard';
 import Footer from '../components/Footer';
 
 export default function Home() {
   return (
     <main>
       <Header />
-      <section className="mx-auto max-w-5xl px-4 py-12">
+
+      <section className="container-max py-12">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Generate YouTube Timestamps
@@ -21,9 +25,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4">
+      <section className="container-max">
         <VideoPreview />
       </section>
+
+      <CTAGrid />
+      <StatsPanel />
+      <HistoryCard />
 
       <Footer />
     </main>
