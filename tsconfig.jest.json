@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "isolatedModules": true,
     "module": "commonjs",
     "jsx": "react-jsx",
     "allowJs": true
