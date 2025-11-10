@@ -14,15 +14,30 @@ export type VideoDetails = {
   commentCount: string | null;
 };
 
-export async function fetchVideoDetails(input: string): Promise<VideoDetails> {
+export type TranscriptSegment = { text: string; start: number; dur: number };
+export type TranscriptResponse = { id: string; transcript: TranscriptSegment[] };
+
+function toQuery(input: string) {
   const qs = new URLSearchParams();
-  // Allow either id or url; server will figure it out
   if (/^[a-zA-Z0-9_-]{11}$/.test(input)) qs.set('id', input);
   else qs.set('url', input);
-  const res = await fetch(`/api/youtube/video?${qs.toString()}`);
+  return qs.toString();
+}
+
+export async function fetchVideoDetails(input: string): Promise<VideoDetails> {
+  const res = await fetch(`/api/youtube/video?${toQuery(input)}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Failed to fetch video details (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchTranscript(input: string): Promise<TranscriptResponse> {
+  const res = await fetch(`/api/youtube/transcript?${toQuery(input)}`);
+  if (!res.ok) {
+    // If transcript is not available, return a safe empty response rather than throwing
+    return { id: input, transcript: [] } as TranscriptResponse;
   }
   return res.json();
 }

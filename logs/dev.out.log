@@ -1,0 +1,19 @@
+
+> tubestamp@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 4.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 7.1s (615 modules)
+ GET / 200 in 7799ms
+ ○ Compiling /api/youtube/video ...
+ ✓ Compiled /api/youtube/video in 2.2s (333 modules)
+ GET /api/youtube/video?url=https%3A%2F%2Fyoutu.be%2FLCnh8NKuNtc%3Fsi%3DRRdB2hcMEwzW1m4v 200 in 2884ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 645ms (648 modules)
+ GET /api/youtube/transcript?id=LCnh8NKuNtc 404 in 904ms

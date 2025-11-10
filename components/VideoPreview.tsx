@@ -4,6 +4,8 @@ import CopyChapters from './CopyChapters';
 
 import type { Thumbnails } from '@/lib/api';
 
+import type { TranscriptSegment } from '@/lib/api';
+
 type Props = {
   loading?: boolean;
   details?: {
@@ -16,9 +18,16 @@ type Props = {
     duration?: string | null;
   } | null;
   timestamps?: TimestampItem[];
+  transcript?: TranscriptSegment[];
+  transcriptLoading?: boolean;
 };
 
-export default function VideoPreview({ loading, details, timestamps = [] }: Props) {
+export default function VideoPreview({ loading, details, timestamps = [], transcript = [], transcriptLoading = false }: Props) {
+  const effectiveTranscript = transcript.length > 0
+    ? transcript
+    : (details?.description && details.description.trim().length > 0)
+      ? [{ text: details.description.trim(), start: 0, dur: 0 }]
+      : [];
   return (
     <section id="preview" className="mx-auto w-full max-w-3xl">
       <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 shadow-lg">
@@ -69,8 +78,31 @@ export default function VideoPreview({ loading, details, timestamps = [] }: Prop
             </ul>
           </div>
         )}
-        <div className="mt-4 h-32 w-full rounded-md border border-dashed border-gray-700/80 bg-gray-900" />
+
+        {/* Transcript section */}
+        {(transcriptLoading || effectiveTranscript.length > 0) && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-200">Transcript</h3>
+            {transcriptLoading ? (
+              <p className="mt-2 text-sm text-gray-400">Loading transcript…</p>
+            ) : effectiveTranscript.length > 0 ? (
+              <div className="mt-2 max-h-64 overflow-auto rounded-md border border-gray-800 bg-gray-950 p-3 text-sm leading-relaxed text-gray-300">
+                {effectiveTranscript.map((seg, idx) => (
+                  <p key={`${seg.start}-${idx}`} className="mb-1"><span className="text-gray-500">[{formatTime(seg.start)}]</span> {seg.text}</p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
     </section>
   );
+}
+
+function formatTime(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = Math.floor(totalSeconds % 60);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
