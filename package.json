@@ -5,6 +5,7 @@
   "description": "Dark-themed AI YouTube Timestamps landing page built with Next.js, TypeScript, Tailwind, React Query, and IndexedDB.",
   "author": "Oluwatobi01",
   "license": "MIT",
+  "engines": { "node": ">=18 <=20" },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,6 +32,7 @@
     "react-intl": "^6.6.8"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.8.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.6.1",

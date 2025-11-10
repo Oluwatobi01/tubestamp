@@ -1,0 +1,12 @@
+[build]
+command = "npm run build"
+publish = ".next"
+
+[build.environment]
+# Pin Node version compatible with Next 14
+NODE_VERSION = "18"
+# Set YOUTUBE_API_KEY in Netlify UI (Site settings -> Environment variables)
+# YOUTUBE_API_KEY = "<set in Netlify UI>"
+
+[[plugins]]
+package = "@netlify/plugin-nextjs"
