@@ -25,3 +25,6 @@ coverage/
 
 # Misc
 *.local
+
+# Local runtime logs
+logs/
