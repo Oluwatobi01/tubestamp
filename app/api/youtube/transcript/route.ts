@@ -16,7 +16,7 @@ function extractVideoId(input: string): string | null {
       if (maybeId && maybeId.length === 11) return maybeId;
     }
   } catch {
-    // ignore
+    // ignore invalid URL
   }
   return null;
 }
@@ -27,8 +27,8 @@ function decodeHtmlEntities(input: string): string {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"'.replace(/"/g,'"'))
+    .replace(/&#39;/g, '\'')
     .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
 }
@@ -53,30 +53,27 @@ function parseTimedTextXml(xml: string) {
   return segments;
 }
 
+// Narrow types for JSON3 caption response
+type Json3Seg = { utf8?: string };
+interface Json3Event {
+  tStartMs?: number;
+  dDurationMs?: number;
+  segs?: Json3Seg[];
+  utf8?: string;
+}
+interface Json3Response {
+  events?: Json3Event[];
+}
+
+// Narrow type for captionTracks
+interface CaptionTrack { languageCode?: string; baseUrl?: string }
+interface PlayerResponse {
+  captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
+  videoDetails?: { shortDescription?: string };
+  microformat?: { playerMicroformatRenderer?: { description?: { simpleText?: string } } };
+}
+
 export async function GET(request: Request) {
-  async function tryDescriptionFallback(videoId: string, ua: RequestInit) {
-    try {
-      const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const resp = await fetch(watchUrl, ua as any);
-      if (resp.ok) {
-        const html = await resp.text();
-        const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
-        if (m) {
-          const jsonStr = m[1];
-          let pr: any = null;
-          try { pr = JSON.parse(jsonStr); } catch {}
-          const desc = pr?.videoDetails?.shortDescription
-            || pr?.microformat?.playerMicroformatRenderer?.description?.simpleText
-            || '';
-          const clean = (desc || '').toString().trim();
-          if (clean.length) {
-            return [{ text: clean, start: 0, dur: 0 }];
-          }
-        }
-      }
-    } catch {}
-    return [] as { text: string; start: number; dur: number }[];
-  }
   try {
     const { searchParams } = new URL(request.url);
     const input = searchParams.get('id') || searchParams.get('url');
@@ -89,44 +86,43 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Could not parse a valid YouTube video id' }, { status: 400 });
     }
 
-    const ua = {
+    const ua: RequestInit = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-        'Accept': '*/*',
+        Accept: '*/*',
       },
       // Next.js edge/runtime may cache fetches; ensure up-to-date
-      cache: 'no-store' as const,
+      cache: 'no-store',
     };
 
     // Attempt 0: Parse watch page for captionTracks and use provided baseUrl (most reliable)
     try {
       const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const resp = await fetch(watchUrl, ua as any);
+      const resp = await fetch(watchUrl, ua);
       if (resp.ok) {
         const html = await resp.text();
         // Try to find ytInitialPlayerResponse JSON
         const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
         if (m) {
           const jsonStr = m[1];
-          let pr: any = null;
-          try { pr = JSON.parse(jsonStr); } catch {}
-          const tracks: any[] = pr?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+          const pr = JSON.parse(jsonStr) as unknown as PlayerResponse;
+          const tracks: CaptionTrack[] = pr?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
           if (tracks.length) {
             // Prefer English
-            const pick = tracks.find(t => t.languageCode?.startsWith('en')) || tracks[0];
+            const pick = tracks.find((t) => t.languageCode?.startsWith('en')) || tracks[0];
             if (pick?.baseUrl) {
               const url = new URL(pick.baseUrl);
               url.searchParams.set('fmt', 'json3');
-              const r = await fetch(url.toString(), ua as any);
+              const r = await fetch(url.toString(), ua);
               if (r.ok) {
-                const data = await r.json().catch(() => null);
+                const data = (await r.json().catch(() => null)) as Json3Response | null;
                 if (data && Array.isArray(data.events)) {
-                  const segments = [] as { text: string; start: number; dur: number }[];
+                  const segments: { text: string; start: number; dur: number }[] = [];
                   for (const ev of data.events) {
                     const start = (ev.tStartMs ?? 0) / 1000;
                     const dur = (ev.dDurationMs ?? 0) / 1000;
                     if (!ev.segs || !Array.isArray(ev.segs)) continue;
-                    const text = ev.segs.map((s: any) => s.utf8 || '').join('').replace(/\n/g, ' ').trim();
+                    const text = ev.segs.map((s: Json3Seg) => s.utf8 || '').join('').replace(/\n/g, ' ').trim();
                     if (text) segments.push({ text, start, dur });
                   }
                   if (segments.length) {
@@ -138,7 +134,9 @@ export async function GET(request: Request) {
           }
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('watch page parse failed (attempt 0)', e);
+    }
 
     // Attempt 1: auto-generated English captions (json3)
     try {
@@ -147,17 +145,17 @@ export async function GET(request: Request) {
       json3.searchParams.set('lang', 'en');
       json3.searchParams.set('kind', 'asr');
       json3.searchParams.set('fmt', 'json3');
-      const r = await fetch(json3.toString(), ua as any);
+      const r = await fetch(json3.toString(), ua);
       if (r.ok) {
-        const data = await r.json().catch(() => null);
+        const data = (await r.json().catch(() => null)) as Json3Response | null;
         if (data && Array.isArray(data.events)) {
-          const segments = [] as { text: string; start: number; dur: number }[];
+          const segments: { text: string; start: number; dur: number }[] = [];
           for (const ev of data.events) {
             const start = (ev.tStartMs ?? 0) / 1000;
             const dur = (ev.dDurationMs ?? 0) / 1000;
             let text = '';
             if (Array.isArray(ev.segs)) {
-              text = ev.segs.map((s: any) => s.utf8 || '').join('').replace(/\n/g, ' ').trim();
+              text = ev.segs.map((s: Json3Seg) => s.utf8 || '').join('').replace(/\n/g, ' ').trim();
             } else if (typeof ev.utf8 === 'string') {
               text = String(ev.utf8).replace(/\n/g, ' ').trim();
             }
@@ -168,7 +166,9 @@ export async function GET(request: Request) {
           }
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('json3 fetch failed (attempt 1)', e);
+    }
 
     // Attempt 2: auto-generated English captions (XML)
     try {
@@ -176,7 +176,7 @@ export async function GET(request: Request) {
       xmlAuto.searchParams.set('v', videoId);
       xmlAuto.searchParams.set('lang', 'en');
       xmlAuto.searchParams.set('kind', 'asr');
-      const r2 = await fetch(xmlAuto.toString(), ua as any);
+      const r2 = await fetch(xmlAuto.toString(), ua);
       if (r2.ok) {
         const xml = await r2.text();
         const segs = parseTimedTextXml(xml);
@@ -184,14 +184,16 @@ export async function GET(request: Request) {
           return NextResponse.json({ id: videoId, transcript: segs }, { status: 200 });
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('xml fetch failed (attempt 2)', e);
+    }
 
     // Attempt 3: list available tracks and choose one (prefer en)
     const listUrl = new URL('https://www.youtube.com/api/timedtext');
     listUrl.searchParams.set('type', 'list');
     listUrl.searchParams.set('v', videoId);
 
-    const listRes = await fetch(listUrl.toString(), ua as any);
+    const listRes = await fetch(listUrl.toString(), ua);
     if (!listRes.ok) {
       return NextResponse.json({ id: videoId, transcript: [] }, { status: 200 });
     }
@@ -204,9 +206,9 @@ export async function GET(request: Request) {
     let m: RegExpExecArray | null;
     while ((m = trackRegex.exec(listXml))) {
       const attrs = m[1];
-      const lang_code = attrs.match(/lang_code=\"([^\"]+)\"/)?.[1];
-      const name = attrs.match(/name=\"([^\"]*)\"/)?.[1];
-      const kind = attrs.match(/kind=\"([^\"]+)\"/)?.[1];
+      const lang_code = attrs.match(/lang_code="([^"]+)"/)?.[1];
+      const name = attrs.match(/name="([^"]*)"/)?.[1];
+      const kind = attrs.match(/kind="([^"]+)"/)?.[1];
       tracks.push({ lang_code, name, kind });
     }
 
@@ -214,7 +216,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ id: videoId, transcript: [] }, { status: 200 });
     }
 
-    const preferred = tracks.find(t => t.lang_code?.startsWith('en')) || tracks[0];
+    const preferred = tracks.find((t) => t.lang_code?.startsWith('en')) || tracks[0];
 
     const ttUrl = new URL('https://www.youtube.com/api/timedtext');
     ttUrl.searchParams.set('v', videoId);
@@ -222,7 +224,7 @@ export async function GET(request: Request) {
     if (preferred.name) ttUrl.searchParams.set('name', preferred.name);
     if (preferred.kind) ttUrl.searchParams.set('kind', preferred.kind);
 
-    const ttRes = await fetch(ttUrl.toString(), ua as any);
+    const ttRes = await fetch(ttUrl.toString(), ua);
     if (!ttRes.ok) {
       return NextResponse.json({ id: videoId, transcript: [] }, { status: 200 });
     }
@@ -235,24 +237,29 @@ export async function GET(request: Request) {
     // Final fallback: extract description from watch page and return as a single segment
     try {
       const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const resp = await fetch(watchUrl, ua as any);
+      const resp = await fetch(watchUrl, ua);
       if (resp.ok) {
         const html = await resp.text();
-        const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
-        if (m) {
-          const jsonStr = m[1];
-          let pr: any = null;
-          try { pr = JSON.parse(jsonStr); } catch {}
-          const desc = pr?.videoDetails?.shortDescription
-            || pr?.microformat?.playerMicroformatRenderer?.description?.simpleText
-            || '';
+        const m2 = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
+        if (m2) {
+          const jsonStr = m2[1];
+          const pr = JSON.parse(jsonStr) as unknown as PlayerResponse;
+          const desc =
+            pr?.videoDetails?.shortDescription ||
+            pr?.microformat?.playerMicroformatRenderer?.description?.simpleText ||
+            '';
           const clean = (desc || '').toString().trim();
           if (clean.length) {
-            return NextResponse.json({ id: videoId, transcript: [{ text: clean, start: 0, dur: 0 }] }, { status: 200 });
+            return NextResponse.json(
+              { id: videoId, transcript: [{ text: clean, start: 0, dur: 0 }] },
+              { status: 200 },
+            );
           }
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('description fallback failed (final)', e);
+    }
 
     return NextResponse.json({ id: videoId, transcript: [] }, { status: 200 });
   } catch (err: unknown) {
