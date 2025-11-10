@@ -38,12 +38,12 @@ export default function MainClient() {
     setTranscriptLoading(true);
     try {
       // Fetch details and transcript concurrently so transcript isn't blocked by details failures
-      const detailsPromise = fetchVideoDetails(input).catch((e: unknown) => {
+      const detailsPromise: Promise<VideoDetails | null> = fetchVideoDetails(input).catch((e: unknown) => {
         const message = e instanceof Error ? e.message : 'Failed to fetch video details';
         setError(message);
-        return null as any;
+        return null;
       });
-      const transcriptPromise = fetchTranscript(input).catch(() => ({ transcript: [] } as any));
+      const transcriptPromise = fetchTranscript(input);
 
       const [data, tx] = await Promise.all([detailsPromise, transcriptPromise]);
 
@@ -71,9 +71,9 @@ export default function MainClient() {
       }
 
       // If no transcript but we have a description, use it as a basic fallback
-      const txList = tx?.transcript || [];
+      const txList: TranscriptSegment[] = Array.isArray(tx?.transcript) ? tx.transcript : [];
       if ((!txList || txList.length === 0) && (data?.description || '').trim().length > 0) {
-        setTranscript([{ text: (data!.description as string).trim(), start: 0, dur: 0 }]);
+        setTranscript([{ text: String(data.description ?? '').trim(), start: 0, dur: 0 }]);
       } else {
         setTranscript(txList);
       }
